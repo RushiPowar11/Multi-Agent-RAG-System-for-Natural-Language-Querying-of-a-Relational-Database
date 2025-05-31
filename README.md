@@ -111,11 +111,46 @@ templates/
 4. Push to the branch
 5. Create a Pull Request
 
-## License
+## Here are some example questions you can try with the Multi-Agent RAG System. I'll categorize them by complexity:
 
-[Your License Here]
+# Simple Queries:
+1. "How many employees are in the Sales department?"
+2. "What is the total number of customers?"
+3. "List all projects with 'Completed' status"
+4. "What is the average salary of employees?"
+5. "Show me all employees hired in the last year"
+
+# Intermediate Queries:
+1. "What is the total budget of all active projects?"
+2. "Show me the top 5 highest-paid employees and their departments"
+3. "How many customers do we have from each country?"
+4. "List all projects with budgets over $100,000 and their status"
+5. "What is the average project duration in months?"
+
+# Complex Queries:
+1. "Show me all projects and the number of employees assigned to each"
+2. "What is the distribution of employees across different departments with their average salaries?"
+3. "List customers who joined in 2023 grouped by country"
+4. "Find projects that have been running for more than 6 months and are still not completed"
+5. "What is the total project budget allocation by department?"
+
+# Time-Based Queries:
+1. "How many new customers joined in the last 3 months?"
+2. "Show me all projects that started in 2024"
+3. "List employees hired between January and June 2023"
+4. "What projects are scheduled to end in the next month?"
+5. "Show the trend of customer sign-ups by month over the last year"
+
+These questions are designed to work with your database schema which includes:
+- Customers (name, email, country, join_date)
+- Employees (name, department, hire_date, salary)
+- Projects (name, start_date, end_date, budget, status)
+- ProjectAssignments (linking projects and employees)
+
+Try starting with the simple queries and then move on to more complex ones. This will help you verify that all parts of the system are working correctly.
 
 ## Support
 
-For support, please open an issue in the repository or contact [Your Contact Information]. 
+For support, please open an issue in the repository or contact rusikeshpowar90@gmail.com
+
 >>>>>>> ccb15e4 (first commit)
