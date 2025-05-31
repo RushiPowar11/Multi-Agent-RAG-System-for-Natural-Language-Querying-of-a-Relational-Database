@@ -172,4 +172,4 @@ curl -X POST http://localhost:8000/ask \
    - Monitor response times
 
 ## Support
-For API support or to report issues, please contact [Your Contact Information] 
+For API support or to report issues, please contact [rushikeshpowar90@gmail.com] 
