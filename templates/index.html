@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multi-Agent RAG System</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <h1 class="text-4xl font-bold text-center mb-8">Multi-Agent RAG System</h1>
+        
+        <div class="max-w-3xl mx-auto">
+            <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                <textarea id="question" 
+                    class="w-full p-4 border rounded-lg mb-4 h-32 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Ask your question here..."></textarea>
+                <button onclick="askQuestion()" 
+                    class="w-full bg-blue-500 text-white py-3 px-6 rounded-lg hover:bg-blue-600 transition duration-200">
+                    Ask Question
+                </button>
+            </div>
+
+            <div id="loading" class="hidden">
+                <div class="flex justify-center items-center py-4">
+                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                </div>
+            </div>
+
+            <div id="error" class="hidden">
+                <div class="bg-red-50 border-l-4 border-red-500 p-4 mb-6">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <h3 class="text-sm font-medium text-red-800" id="error-title">Error</h3>
+                            <div class="mt-2 text-sm text-red-700" id="error-message"></div>
+                            <div class="mt-2 text-sm text-red-600" id="error-details"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="warning" class="hidden">
+                <div class="bg-yellow-50 border-l-4 border-yellow-500 p-4 mb-6">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <svg class="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <h3 class="text-sm font-medium text-yellow-800" id="warning-title">Warning</h3>
+                            <div class="mt-2 text-sm text-yellow-700" id="warning-message"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="result" class="hidden">
+                <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                    <h2 class="text-xl font-semibold mb-4">Answer</h2>
+                    <div id="answer" class="text-gray-700 mb-6"></div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <h2 class="text-xl font-semibold mb-4">Intermediate Steps</h2>
+                    
+                    <div class="mb-4">
+                        <h3 class="font-medium text-gray-700 mb-2">Relevant Tables</h3>
+                        <div id="relevant-tables" class="bg-gray-50 p-3 rounded"></div>
+                    </div>
+
+                    <div class="mb-4">
+                        <h3 class="font-medium text-gray-700 mb-2">Generated SQL</h3>
+                        <pre id="generated-sql" class="bg-gray-50 p-3 rounded overflow-x-auto"></pre>
+                    </div>
+
+                    <div>
+                        <h3 class="font-medium text-gray-700 mb-2">Query Results</h3>
+                        <pre id="query-results" class="bg-gray-50 p-3 rounded overflow-x-auto"></pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function askQuestion() {
+            const question = document.getElementById('question').value.trim();
+            if (!question) return;
+
+            // Reset UI
+            document.getElementById('loading').classList.remove('hidden');
+            document.getElementById('result').classList.add('hidden');
+            document.getElementById('error').classList.add('hidden');
+            document.getElementById('warning').classList.add('hidden');
+
+            try {
+                const response = await fetch('/ask', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ question }),
+                });
+
+                const data = await response.json();
+
+                // Handle different response types
+                if (!response.ok) {
+                    // Show error message
+                    const errorDiv = document.getElementById('error');
+                    const errorTitle = document.getElementById('error-title');
+                    const errorMessage = document.getElementById('error-message');
+                    const errorDetails = document.getElementById('error-details');
+
+                    if (response.status === 402) {
+                        errorTitle.textContent = "API Quota Exceeded";
+                        errorMessage.textContent = "The OpenAI API quota has been exceeded. Please check your API key and billing status.";
+                    } else if (response.status === 503) {
+                        errorTitle.textContent = "Database Error";
+                        errorMessage.textContent = "There was an error connecting to the database.";
+                    } else {
+                        errorTitle.textContent = "Error";
+                        errorMessage.textContent = data.error || "An unknown error occurred";
+                    }
+
+                    if (data.original_error) {
+                        errorDetails.textContent = `Technical details: ${data.original_error}`;
+                    }
+
+                    errorDiv.classList.remove('hidden');
+                    return;
+                }
+
+                // Handle partial content
+                if (response.status === 206) {
+                    const warningDiv = document.getElementById('warning');
+                    const warningTitle = document.getElementById('warning-title');
+                    const warningMessage = document.getElementById('warning-message');
+
+                    warningTitle.textContent = "Partial Results";
+                    warningMessage.textContent = "Some results are available but AI processing was limited due to API quota.";
+                    warningDiv.classList.remove('hidden');
+                }
+
+                // Update the UI with results
+                if (data.answer) {
+                    document.getElementById('answer').innerHTML = marked.parse(data.answer);
+                }
+
+                if (data.intermediate_steps) {
+                    const steps = data.intermediate_steps;
+                    if (steps.relevant_tables) {
+                        document.getElementById('relevant-tables').textContent = steps.relevant_tables.join(', ');
+                    }
+                    if (steps.generated_sql) {
+                        document.getElementById('generated-sql').textContent = steps.generated_sql;
+                    }
+                    if (steps.query_results) {
+                        document.getElementById('query-results').textContent = 
+                            JSON.stringify(steps.query_results, null, 2);
+                    }
+                }
+
+                document.getElementById('result').classList.remove('hidden');
+            } catch (error) {
+                const errorDiv = document.getElementById('error');
+                const errorMessage = document.getElementById('error-message');
+                errorMessage.textContent = "Failed to communicate with the server.";
+                errorDiv.classList.remove('hidden');
+            } finally {
+                document.getElementById('loading').classList.add('hidden');
+            }
+        }
+
+        // Allow submitting with Enter key
+        document.getElementById('question').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                askQuestion();
+            }
+        });
+    </script>
+</body>
+</html>
